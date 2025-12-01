@@ -29,6 +29,7 @@ fun ExamScreen(viewModel: ExamViewModel = viewModel()) {
     val screenWidthPx = metrics.widthPixels
     val screenHeightPx = metrics.heightPixels
     val density = metrics.density
+    val scoreText by viewModel.scoreText.collectAsState()
 
     val imageSizeDp = (300 / density).dp
     val offsetYHigher = ((screenHeightPx / 2 - 300) / density).dp
@@ -74,7 +75,7 @@ fun ExamScreen(viewModel: ExamViewModel = viewModel()) {
             Spacer(modifier = Modifier.height(10.dp))
             Text("螢幕大小：${screenWidthPx.toFloat()} * ${screenHeightPx.toFloat()}", fontSize = 16.sp)
             Spacer(modifier = Modifier.height(10.dp))
-            Text("成績：0分", fontSize = 16.sp)
+            Text(scoreText, fontSize = 16.sp)
         }
 
         // 掉落服務圖示

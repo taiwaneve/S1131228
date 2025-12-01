@@ -13,15 +13,41 @@ data class ServiceIconState(
     val resId: Int = R.drawable.service1
 )
 
+data class RoleZone(
+    val name: String,
+    val x: Float,
+    val y: Float,
+    val width: Float,
+    val height: Float
+)
+
 class ExamViewModel : ViewModel() {
 
     private val _iconState = MutableStateFlow(ServiceIconState())
     val iconState: StateFlow<ServiceIconState> = _iconState
 
+    private val _scoreText = MutableStateFlow("成績：0分")
+    val scoreText: StateFlow<String> = _scoreText
+
+    private var score = 0
+    private lateinit var roleZones: List<RoleZone>
+
     suspend fun startFalling(screenWidthPx: Int, screenHeightPx: Int, iconSizePx: Int) {
         val centerX = (screenWidthPx - iconSizePx) / 2f
         var y = 0f
         var resId = randomIcon()
+
+        val roleSize = 300f
+        val topY = (screenHeightPx / 2 - roleSize * 1.5f).toFloat()
+        val bottomY = (screenHeightPx - roleSize).toFloat()
+
+        roleZones = listOf(
+            RoleZone("嬰幼兒", 0f, topY, roleSize, roleSize),
+            RoleZone("兒童", (screenWidthPx - roleSize).toFloat(), topY, roleSize, roleSize),
+            RoleZone("成人", 0f, bottomY, roleSize, roleSize),
+            RoleZone("一般民眾", (screenWidthPx - roleSize).toFloat(), bottomY, roleSize, roleSize)
+        )
+
         _iconState.update {
             it.copy(x = centerX, y = y, resId = resId)
         }
@@ -29,16 +55,37 @@ class ExamViewModel : ViewModel() {
         while (true) {
             delay(100)
             y += 20f
-            val newX = if (y + iconSizePx >= screenHeightPx) {
-                y = 0f
-                resId = randomIcon()
-                centerX // ✅ 碰到底部時重設為中間
-            } else {
-                _iconState.value.x // ✅ 其他時間保留目前拖曳後的 x
+
+            val iconX = _iconState.value.x
+            val iconY = y
+            val iconW = iconSizePx.toFloat()
+            val iconH = iconSizePx.toFloat()
+
+            val hitRole = roleZones.firstOrNull { zone ->
+                iconX < zone.x + zone.width &&
+                        iconX + iconW > zone.x &&
+                        iconY < zone.y + zone.height &&
+                        iconY + iconH > zone.y
             }
 
-            _iconState.update {
-                it.copy(x = newX, y = y, resId = resId) }
+            val resultText = if (hitRole != null) {
+                "（碰撞${hitRole.name}圖示）"
+            } else if (iconY + iconSizePx >= screenHeightPx) {
+                "（掉到最下方）"
+            } else {
+                ""
+            }
+
+            _scoreText.value = "成績：${score}分 $resultText"
+
+            if (iconY + iconSizePx >= screenHeightPx) {
+                score += 1
+                y = 0f
+                resId = randomIcon()
+            }
+
+            val newX = if (y == 0f) centerX else _iconState.value.x
+            _iconState.update { it.copy(x = newX, y = y, resId = resId) }
         }
     }
 
