@@ -42,8 +42,9 @@ fun ExamScreen(viewModel: ExamViewModel = viewModel()) {
 
     // 啟動下落邏輯
     LaunchedEffect(Unit) {
-        viewModel.startFalling(screenWidthPx, screenHeightPx, iconSizePx)
+        viewModel.startFalling(context, screenWidthPx, screenHeightPx, iconSizePx)
     }
+
 
     Box(
         modifier = Modifier
@@ -96,4 +97,5 @@ fun ExamScreen(viewModel: ExamViewModel = viewModel()) {
                 }
         )
     }
+
 }

@@ -5,6 +5,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import android.content.Context
+import android.widget.Toast
 import kotlin.random.Random
 
 data class ServiceIconState(
@@ -29,10 +31,25 @@ class ExamViewModel : ViewModel() {
     private val _scoreText = MutableStateFlow("成績：0分")
     val scoreText: StateFlow<String> = _scoreText
 
+
     private var score = 0
     private lateinit var roleZones: List<RoleZone>
+    private val serviceAnswers = mapOf(
+        R.drawable.service0 to "嬰幼兒",
+        R.drawable.service1 to "兒童",
+        R.drawable.service2 to "成人",
+        R.drawable.service3 to "一般民眾"
+    )
 
-    suspend fun startFalling(screenWidthPx: Int, screenHeightPx: Int, iconSizePx: Int) {
+    private val serviceDescriptions = mapOf(
+        R.drawable.service0 to "極早期療育，屬於嬰幼兒方面的服務",
+        R.drawable.service1 to "離島服務，屬於兒童方面的服務",
+        R.drawable.service2 to "極重多障，屬於成人方面的服務",
+        R.drawable.service3 to "輔具服務，屬於一般民眾方面的服務"
+    )
+
+
+    suspend fun startFalling(context: Context, screenWidthPx: Int, screenHeightPx: Int, iconSizePx: Int) {
         val centerX = (screenWidthPx - iconSizePx) / 2f
         var y = 0f
         var resId = randomIcon()
@@ -68,20 +85,35 @@ class ExamViewModel : ViewModel() {
                         iconY + iconH > zone.y
             }
 
-            val resultText = if (hitRole != null) {
-                "（碰撞${hitRole.name}圖示）"
-            } else if (iconY + iconSizePx >= screenHeightPx) {
-                "（掉到最下方）"
-            } else {
-                ""
-            }
+            val isBottom = iconY + iconSizePx >= screenHeightPx
+            val correctAnswer = serviceAnswers[resId]
+            val resultText: String
+            val toastText = serviceDescriptions[resId] ?: "未知服務"
 
-            _scoreText.value = "成績：${score}分 $resultText"
 
-            if (iconY + iconSizePx >= screenHeightPx) {
-                score += 1
+            if (hitRole != null || isBottom) {
+                if (hitRole != null) {
+                    resultText = "（碰撞${hitRole.name}圖示）"
+                    val toastText = serviceDescriptions[resId] ?: "未知服務"
+                    if (hitRole.name == correctAnswer) {
+                        score += 1
+                    } else {
+                        score -= 1
+                    }
+                } else {
+                    resultText = "（掉到最下方）"
+                    val toastText = serviceDescriptions[resId] ?: "未知服務"
+                    score -= 1
+                }
+
+                _scoreText.value = "成績：${score}分 $resultText"
+                Toast.makeText(context, toastText, Toast.LENGTH_SHORT).show()
+
+                delay(3000)
                 y = 0f
                 resId = randomIcon()
+            } else {
+                _scoreText.value = "成績：${score}分"
             }
 
             val newX = if (y == 0f) centerX else _iconState.value.x
